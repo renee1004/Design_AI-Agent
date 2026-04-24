@@ -1,0 +1,297 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DESIGN AI AGENT — Stable Final</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap");
+      :root {
+        --bg: #0a0a0f;
+        --surface: #12121a;
+        --surface2: #1a1a26;
+        --border: #252535;
+        --border2: #303048;
+        --accent: #7c6bff;
+        --accent2: #b8aeff;
+        --accent-glow: rgba(124, 107, 255, 0.15);
+        --green: #4ade80;
+        --amber: #fbbf24;
+        --red: #f87171;
+        --text: #e8e8f0;
+        --text2: #9090b0;
+        --text3: #5a5a7a;
+        --dna: #06b6d4;
+        --meta: #a78bfa;
+        --mat: #f59e0b;
+        --form: #34d399;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: "Noto Sans KR", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow: hidden; }
+      .layout { display: grid; grid-template-columns: 260px 1fr 340px; grid-template-rows: 60px 1fr; height: 100vh; }
+      .topbar { grid-column: 1 / -1; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 14px; z-index: 20; }
+      .topbar-logo { font-family: "Syne", sans-serif; font-weight: 800; font-size: 15px; letter-spacing: .1em; display:flex; align-items:center; gap:8px; }
+      .logo-badge { width:8px; height:8px; background: var(--accent); border-radius:50%; box-shadow:0 0 8px var(--accent); }
+      .topbar-divider { width:1px; height:24px; background: var(--border); }
+      .active-agent-pill { display:flex; align-items:center; gap:6px; padding:4px 12px; background:var(--accent-glow); border:1px solid var(--border2); border-radius:20px; font-size:12px; color:var(--accent2); font-family:"DM Mono", monospace; }
+      .pill-dot { width:6px; height:6px; border-radius:50%; background: var(--accent); }
+      .topbar-right { margin-left:auto; display:flex; gap:10px; align-items:center; }
+      .phase-indicator { font-family:"DM Mono", monospace; font-size:11px; color:var(--text3); display:flex; align-items:center; gap:8px; }
+      .phase-dot { width:6px; height:6px; border-radius:50%; background:var(--border2); }
+      .phase-dot.active { background:var(--green); box-shadow:0 0 6px var(--green); }
+      .icon-btn, .mobile-toggle { background: transparent; border:1px solid var(--border); color:var(--text3); padding: 6px 10px; border-radius:8px; cursor:pointer; font-size:11px; font-family:"DM Mono", monospace; transition:.2s; }
+      .icon-btn:hover, .mobile-toggle:hover { color:var(--text); border-color:var(--border2); }
+      .icon-btn.has-key { color:var(--green); border-color: rgba(74, 222, 128, 0.35); }
+      .sidebar, .right-panel { background: var(--surface); }
+      .sidebar { border-right:1px solid var(--border); padding:16px 0; overflow-y:auto; display:flex; flex-direction:column; }
+      .sidebar-section, .panel-header { padding:8px 16px 4px; font-family:"DM Mono", monospace; font-size:10px; letter-spacing:.15em; color:var(--text3); text-transform:uppercase; }
+      .agent-btn { display:flex; align-items:center; gap:12px; padding:10px 16px; cursor:pointer; transition:.2s; border:none; background:transparent; color:var(--text2); width:100%; text-align:left; }
+      .agent-btn:hover, .agent-btn.active { background:var(--accent-glow); color:var(--text); }
+      .agent-btn.active { border-left:2px solid var(--accent); }
+      .agent-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+      .agent-name { font-size:13px; font-weight:500; }
+      .agent-role { font-size:10px; color:var(--text3); font-family:"DM Mono", monospace; }
+      .sidebar-sep { height:1px; background:var(--border); margin:8px 16px; }
+      .gate-item, .dna-list-item { display:flex; align-items:center; gap:10px; padding:8px 16px; font-size:12px; color:var(--text3); }
+      .gate-item.filled { color:var(--green); }
+      .gate-num { width:18px; height:18px; border-radius:4px; background:var(--border); display:flex; align-items:center; justify-content:center; font-family:"DM Mono", monospace; font-size:10px; }
+      .main { display:flex; flex-direction:column; overflow:hidden; background:var(--bg); min-width:0; }
+      .chat-area { flex:1; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:16px; }
+      .welcome-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:32px; text-align:center; }
+      .welcome-title { font-family:"Syne", sans-serif; font-size:24px; font-weight:700; margin-bottom:6px; }
+      .welcome-sub { font-size:13px; color:var(--text2); line-height:1.6; margin-bottom:20px; }
+      .welcome-warn { background:rgba(251,191,36,.08); border:1px solid rgba(251,191,36,.25); color:var(--amber); font-size:11px; padding:8px 12px; border-radius:8px; margin-bottom:20px; font-family:"DM Mono", monospace; text-align:left; }
+      .msg { display:flex; gap:12px; }
+      .msg.user { flex-direction:row-reverse; }
+      .msg-avatar { width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; margin-top:2px; background:var(--surface2); border:1px solid var(--border); }
+      .msg-content { max-width:78%; min-width:0; }
+      .msg.user .msg-content { display:flex; flex-direction:column; align-items:flex-end; }
+      .msg-agent-label { font-family:"DM Mono", monospace; font-size:10px; color:var(--text3); margin-bottom:4px; display:flex; gap:6px; align-items:center; }
+      .msg-bubble { background:var(--surface); border:1px solid var(--border); border-radius:4px 14px 14px 14px; padding:12px 16px; font-size:13px; line-height:1.7; white-space:pre-wrap; word-break:break-word; }
+      .msg.user .msg-bubble { background:var(--surface2); border-radius:14px 4px 14px 14px; border-color:var(--border2); }
+      .thinking-bubble { background:var(--surface); border:1px solid var(--border); border-radius:4px 14px 14px 14px; padding:10px 14px; font-size:12px; color:var(--text3); font-family:"DM Mono", monospace; }
+      .input-bar { padding:14px 24px; border-top:1px solid var(--border); background:var(--surface); display:flex; flex-direction:column; gap:10px; }
+      .input-mode-selector { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+      .mode-chip { padding:4px 10px; border-radius:12px; font-size:11px; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text3); font-family:"DM Mono", monospace; }
+      .mode-chip.active { border-color:var(--accent); color:var(--accent2); background:var(--accent-glow); }
+      .input-row { display:flex; gap:10px; align-items:flex-end; }
+      .input-wrap { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:12px; display:flex; align-items:flex-end; padding:4px 4px 4px 14px; }
+      textarea { flex:1; background:transparent; border:none; outline:none; resize:none; color:var(--text); font-size:13px; font-family:"Noto Sans KR", sans-serif; line-height:1.6; padding:8px 0; max-height:120px; overflow-y:auto; }
+      .attach-btn, .send-btn { width:36px; height:36px; border-radius:8px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+      .attach-btn { background:transparent; color:var(--text3); font-size:16px; }
+      .send-btn { background:var(--accent); color:#fff; font-size:16px; }
+      .right-panel { border-left:1px solid var(--border); overflow-y:auto; display:flex; flex-direction:column; }
+      .panel-tabs { display:flex; background:var(--surface); border-bottom:1px solid var(--border); }
+      .panel-tab { flex:1; padding:10px 8px; font-size:11px; font-family:"DM Mono", monospace; color:var(--text3); background:transparent; border:none; cursor:pointer; border-bottom:2px solid transparent; }
+      .panel-tab.active { color:var(--accent2); border-bottom-color:var(--accent); }
+      .brief-form, .pipeline, .concept-cards, .dna-editor { padding:16px; display:flex; flex-direction:column; gap:12px; }
+      .form-group { display:flex; flex-direction:column; gap:4px; }
+      .form-label { font-size:10px; color:var(--text3); font-family:"DM Mono", monospace; letter-spacing:.08em; text-transform:uppercase; }
+      .form-input, .form-select, .form-textarea { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; color:var(--text); font-size:12px; outline:none; width:100%; }
+      .form-row, .form-row-3 { display:grid; gap:8px; }
+      .form-row { grid-template-columns:1fr 1fr; }
+      .form-row-3 { grid-template-columns:1fr 1fr 1fr; }
+      .run-swarm-btn, .btn-primary, .btn-secondary { padding:10px 14px; border-radius:10px; border:1px solid var(--border); cursor:pointer; }
+      .run-swarm-btn, .btn-primary { background:var(--accent); color:#fff; border:none; }
+      .btn-secondary { background:transparent; color:var(--text2); }
+      .pipe-step, .concept-card, .dna-card-display { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:12px; }
+      .concept-card.selected { border-color:var(--accent); background:var(--accent-glow); }
+      .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:100; display:none; align-items:center; justify-content:center; padding:20px; }
+      .modal-backdrop.show { display:flex; }
+      .modal { background:var(--surface); border:1px solid var(--border2); border-radius:16px; padding:24px; max-width:480px; width:100%; }
+      .modal-title { font-family:"Syne", sans-serif; font-size:18px; font-weight:700; margin-bottom:6px; }
+      .modal-sub { font-size:12px; color:var(--text2); line-height:1.6; margin-bottom:16px; }
+      .modal-actions { display:flex; gap:8px; margin-top:16px; justify-content:flex-end; }
+      .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--surface); border:1px solid var(--border2); padding:10px 18px; border-radius:10px; font-size:12px; color:var(--text); z-index:200; opacity:0; transition:.3s; font-family:"DM Mono", monospace; }
+      .toast.show { opacity:1; }
+      .toast.error { border-color:var(--red); color:var(--red); }
+      .toast.success { border-color:var(--green); color:var(--green); }
+      .hide { display:none !important; }
+      .attached-files { display:flex; flex-wrap:wrap; gap:4px; }
+      .file-tag { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; font-size:10px; color:var(--text3); font-family:"DM Mono", monospace; }
+      @media (max-width: 1100px) { .layout { grid-template-columns: 72px 1fr 320px; } .agent-meta,.sidebar-section,.gate-item span,.dna-list-item{display:none;} }
+      @media (max-width: 820px) { .layout { grid-template-columns:1fr; grid-template-rows:60px 1fr; } .sidebar,.right-panel{display:none;} }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <div class="topbar">
+        <button class="mobile-toggle" onclick="toggleSidebar()" title="에이전트">☰</button>
+        <div class="topbar-logo"><div class="logo-badge"></div>DESIGN AI <span style="color:var(--text3);font-weight:400;font-size:10px;margin-left:4px">stable</span></div>
+        <div class="topbar-divider"></div>
+        <div class="active-agent-pill"><div class="pill-dot"></div><span id="activeAgentLabel">ART DIRECTOR</span></div>
+        <div class="topbar-right">
+          <div class="phase-indicator">
+            <span>INTAKE</span><div class="phase-dot active" id="p1"></div>
+            <span>SWARM</span><div class="phase-dot" id="p2"></div>
+            <span>SYNTH</span><div class="phase-dot" id="p3"></div>
+            <span>FIX</span><div class="phase-dot" id="p4"></div>
+          </div>
+          <button class="icon-btn" id="lastSaveTime" style="font-size:10px;color:var(--text3)" title="마지막 저장 시간 및 스토리지 용량">SAVE</button>
+          <button class="icon-btn" id="apiKeyBtn" onclick="openKeyModal()" title="API 키 설정">🔑 KEY</button>
+          <button class="mobile-toggle" onclick="togglePanel()" title="브리프">⚙</button>
+          <button class="icon-btn" onclick="saveAllLocal()" title="브라우저 저장">SAVE</button>
+          <button class="icon-btn" onclick="exportChat()" title="JSON 다운로드">EXPORT</button>
+          <button class="icon-btn" onclick="downloadCurrentHTML()" title="HTML 받기">HTML</button>
+        </div>
+      </div>
+      <div class="sidebar" id="sidebar">
+        <div class="sidebar-section">Swarm Agents</div>
+        <button class="agent-btn active" data-agent="orchestrator" onclick="selectAgent('orchestrator', this)"><div class="agent-icon" style="background:rgba(124,107,255,.15);color:#7c6bff">🎯</div><div class="agent-meta"><div class="agent-name">Art Director</div><div class="agent-role">ORCHESTRATOR</div></div></button>
+        <button class="agent-btn" data-agent="dna" onclick="selectAgent('dna', this)"><div class="agent-icon" style="background:rgba(6,182,212,.15);color:#06b6d4">🧬</div><div class="agent-meta"><div class="agent-name">DNA Remix</div><div class="agent-role">DNA</div></div></button>
+        <button class="agent-btn" data-agent="metaphor" onclick="selectAgent('metaphor', this)"><div class="agent-icon" style="background:rgba(167,139,250,.15);color:#a78bfa">🪄</div><div class="agent-meta"><div class="agent-name">Metaphor Maker</div><div class="agent-role">METAPHOR</div></div></button>
+        <button class="agent-btn" data-agent="material" onclick="selectAgent('material', this)"><div class="agent-icon" style="background:rgba(245,158,11,.15);color:#f59e0b">🧱</div><div class="agent-meta"><div class="agent-name">Material Hunter</div><div class="agent-role">MATERIAL</div></div></button>
+        <button class="agent-btn" data-agent="form" onclick="selectAgent('form', this)"><div class="agent-icon" style="background:rgba(52,211,153,.15);color:#34d399">📐</div><div class="agent-meta"><div class="agent-name">Form Explorer</div><div class="agent-role">FORM</div></div></button>
+        <div class="sidebar-sep"></div>
+        <div class="sidebar-section">Gate Status</div>
+        <div class="gate-item" id="gate1item"><div class="gate-num">1</div><span>Brand</span></div>
+        <div class="gate-item" id="gate2item"><div class="gate-num">2</div><span>SubBrand / Category</span></div>
+        <div class="gate-item" id="gate3item"><div class="gate-num">3</div><span>Channel</span></div>
+        <div class="gate-item" id="gate4item"><div class="gate-num">4</div><span>W/H</span></div>
+        <div class="gate-item" id="gate5item"><div class="gate-num">5</div><span>Notes</span></div>
+        <div class="sidebar-sep"></div>
+        <div class="sidebar-section" id="dnaCountLabel">DNA Library 0</div>
+        <div id="dnaListContainer"></div>
+      </div>
+      <div class="main">
+        <div class="chat-area" id="chatArea">
+          <div class="welcome-card" id="welcomeCard">
+            <div class="welcome-title">Design AI Agent</div>
+            <div class="welcome-sub">5개 전문 에이전트가 협업하는 POSM · POP · Display 기획/디자인 워크플로우</div>
+            <div class="welcome-warn"><b>⚠ 시작 전:</b> 우측 상단 <b>🔑 KEY</b>를 눌러 Google AI Studio API 키를 입력하세요. 키는 현재 브라우저에만 저장됩니다.</div>
+          </div>
+        </div>
+        <div class="input-bar">
+          <div class="input-mode-selector">
+            <div class="mode-chip active" id="mode-chat" onclick="setMode('chat')">Chat</div>
+            <div class="mode-chip" id="mode-brief" onclick="setMode('brief')">Brief</div>
+            <div class="mode-chip" id="mode-dna" onclick="setMode('dna')">DNA</div>
+            <span style="margin-left:auto;font-size:10px;color:var(--text3);font-family:'DM Mono',monospace" id="historyHint">history 0</span>
+            <button class="icon-btn" onclick="clearCurrentHistory()" title="대화 초기화">CLEAR</button>
+          </div>
+          <div class="attached-files" id="attachedFiles"></div>
+          <div class="input-row">
+            <div class="input-wrap">
+              <textarea id="msgInput" placeholder="메시지를 입력하세요..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+              <input type="file" id="fileInput" class="hide" multiple accept=".png,.jpg,.jpeg,.webp" onchange="handleFileAttach(event)" />
+              <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="파일 첨부">📎</button>
+            </div>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+          </div>
+        </div>
+      </div>
+      <div class="right-panel" id="rightPanel">
+        <div class="panel-tabs">
+          <button class="panel-tab active" data-tab="brief" onclick="switchTab('brief')">Brief</button>
+          <button class="panel-tab" data-tab="pipeline" onclick="switchTab('pipeline')">Pipeline</button>
+          <button class="panel-tab" data-tab="concepts" onclick="switchTab('concepts')">Concepts</button>
+          <button class="panel-tab" data-tab="dna" onclick="switchTab('dna')">DNA</button>
+        </div>
+        <div id="tab-brief">
+          <div class="panel-header"><span>Gate 1/5</span><button class="btn-secondary" onclick="clearBrief()">Clear</button></div>
+          <div class="brief-form">
+            <div class="form-group"><div class="form-label">Brand</div><select class="form-select" id="fBrand" onchange="updateGateStatus()"><option value="">선택</option><option>KTG</option><option>PMI</option><option>BAT</option><option>JTI</option><option>기타</option></select></div>
+            <div class="form-group"><div class="form-label">Sub Brand</div><input class="form-input" id="fSubBrand" placeholder="예: TITLE A, IQOS ILUMA" oninput="updateGateStatus()"></div>
+            <div class="form-group"><div class="form-label">Category</div><select class="form-select" id="fCategory" onchange="updateGateStatus()"><option value="">선택</option><option>POSM CDU</option><option>POSM Floor Stand</option><option>POP</option><option>Display</option><option>Packaging</option></select></div>
+            <div class="form-group"><div class="form-label">Channel</div><input class="form-input" id="fChannel" placeholder="예: CVS, HNB, 면세" oninput="updateGateStatus()"></div>
+            <div class="form-row-3">
+              <div class="form-group"><div class="form-label">W mm</div><input class="form-input" id="fW" type="number" placeholder="245" oninput="updateGateStatus()"></div>
+              <div class="form-group"><div class="form-label">H mm</div><input class="form-input" id="fH" type="number" placeholder="460" oninput="updateGateStatus()"></div>
+              <div class="form-group"><div class="form-label">D mm</div><input class="form-input" id="fD" type="number" placeholder="58" oninput="updateGateStatus()"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><div class="form-label">Qty</div><input class="form-input" id="fQty" placeholder="1000" oninput="updateGateStatus()"></div>
+              <div class="form-group"><div class="form-label">Digital</div><select class="form-select" id="fDigital" onchange="updateGateStatus()"><option value="">선택</option><option>LCD</option><option>LED</option><option>None</option></select></div>
+            </div>
+            <div class="form-group"><div class="form-label">Notes</div><textarea class="form-textarea" id="fNotes" placeholder="요구사항, POP, 진열 환경, SKU 등" oninput="updateGateStatus()"></textarea></div>
+            <button class="run-swarm-btn" id="runSwarmBtn" onclick="runFullSwarm()">Run Creative Swarm</button>
+          </div>
+        </div>
+        <div id="tab-pipeline" class="hide"><div class="panel-header">Pipeline Status</div><div class="pipeline" id="pipelineBox"></div></div>
+        <div id="tab-concepts" class="hide"><div class="panel-header">Concept Outputs</div><div class="concept-cards" id="conceptCards"><div class="concept-card">Swarm 실행 후 컨셉 3안이 표시됩니다.</div></div></div>
+        <div id="tab-dna" class="hide"><div class="panel-header">DNA Library</div><div class="dna-editor" id="dnaEditor"></div></div>
+      </div>
+    </div>
+    <div class="modal-backdrop" id="keyModal" onclick="if(event.target===this)closeKeyModal()">
+      <div class="modal">
+        <div class="modal-title">Google AI Studio API Key</div>
+        <div class="modal-sub">Gemini API 키를 입력하세요. 현재 브라우저에만 저장됩니다.</div>
+        <div class="form-group"><div class="form-label">API Key</div><input class="form-input" id="apiKeyInput" type="password" placeholder="AIzaSy..."></div>
+        <div class="form-group" style="margin-top:8px"><div class="form-label">Model</div><select class="form-select" id="modelSelect"><option value="gemini-2.5-flash">gemini-2.5-flash</option><option value="gemini-2.5-pro">gemini-2.5-pro</option><option value="gemini-2.0-flash">gemini-2.0-flash</option></select></div>
+        <div class="modal-actions"><button class="btn-secondary" onclick="closeKeyModal()">취소</button><button class="btn-secondary" onclick="clearKey()" style="color:var(--red)">삭제</button><button class="btn-primary" onclick="saveKey()">저장</button></div>
+      </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script>
+      const STORAGE = { key: 'design_ai_key', model: 'design_ai_model', dna: 'design_ai_dna', chat: 'design_ai_chat_histories_v1', brief: 'design_ai_brief_v1', lastSave: 'design_ai_last_save', saveHistory: 'design_ai_save_history' };
+      let currentAgent = 'orchestrator';
+      let currentMode = 'chat';
+      let attachedFiles = [];
+      let isRunning = false;
+      let apiKey = '';
+      let selectedModel = 'gemini-2.5-flash';
+      let lastConcepts = [];
+      let agentHistories = { orchestrator: [], dna: [], metaphor: [], material: [], form: [] };
+      let dnaLibrary = [];
+      let autoSaveTimer = null;
+      let saveHistory = [];
+      const AGENTS = {
+        orchestrator: { name: 'Art Director', icon: '🎯', color: '#7c6bff', role: '총괄' },
+        dna: { name: 'DNA Remix', icon: '🧬', color: '#06b6d4', role: 'DNA' },
+        metaphor: { name: 'Metaphor Maker', icon: '🪄', color: '#a78bfa', role: '메타포' },
+        material: { name: 'Material Hunter', icon: '🧱', color: '#f59e0b', role: '소재' },
+        form: { name: 'Form Explorer', icon: '📐', color: '#34d399', role: '형태' }
+      };
+      const SEED_DNA = [
+        { id:'DNA-001', brand:'KTG', sub:'TITLE A', category:'POSM CDU', name:'슬림 라이트 CDU', tags:['minimal','lightbox','magnetic'] },
+        { id:'DNA-002', brand:'PMI', sub:'IQOS', category:'Display', name:'모듈형 디스플레이', tags:['premium','led','rollout'] },
+        { id:'DNA-003', brand:'BAT', sub:'Glo', category:'POP', name:'헤리티지 POP', tags:['classic','brass','snapfit'] }
+      ];
+      function toast(msg, type='') { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show' + (type ? ' ' + type : ''); clearTimeout(window.__toastTimer); window.__toastTimer = setTimeout(() => t.classList.remove('show'), 2200); }
+      function saveLS(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch (e) { console.error(e); return false; } }
+      function loadLS(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { console.error(e); return fallback; } }
+      function collectBriefData() { return { brand: document.getElementById('fBrand').value || '', sub_brand: document.getElementById('fSubBrand').value || '', category: document.getElementById('fCategory').value || '', channel: document.getElementById('fChannel').value || '', dimensions: { W: document.getElementById('fW').value || '', H: document.getElementById('fH').value || '', D: document.getElementById('fD').value || '' }, quantity: document.getElementById('fQty').value || '', digital: document.getElementById('fDigital').value || '', notes: document.getElementById('fNotes').value || '' }; }
+      function loadBrief() { const b = loadLS(STORAGE.brief, null); if (!b) return; document.getElementById('fBrand').value = b.brand || ''; document.getElementById('fSubBrand').value = b.sub_brand || ''; document.getElementById('fCategory').value = b.category || ''; document.getElementById('fChannel').value = b.channel || ''; document.getElementById('fW').value = b.dimensions?.W || ''; document.getElementById('fH').value = b.dimensions?.H || ''; document.getElementById('fD').value = b.dimensions?.D || ''; document.getElementById('fQty').value = b.quantity || ''; document.getElementById('fDigital').value = b.digital || ''; document.getElementById('fNotes').value = b.notes || ''; }
+      function saveBrief() { saveLS(STORAGE.brief, collectBriefData()); scheduleAutoSave(); }
+      function saveChatHistories() { saveLS(STORAGE.chat, agentHistories); scheduleAutoSave(); }
+      function loadChatHistories() { const d = loadLS(STORAGE.chat, null); if (d && typeof d === 'object') { agentHistories = { orchestrator: Array.isArray(d.orchestrator) ? d.orchestrator : [], dna: Array.isArray(d.dna) ? d.dna : [], metaphor: Array.isArray(d.metaphor) ? d.metaphor : [], material: Array.isArray(d.material) ? d.material : [], form: Array.isArray(d.form) ? d.form : [] }; } }
+      function getStorageUsage() { let size = 0; for (let key in localStorage) { if (localStorage.hasOwnProperty(key) && key.startsWith('design_ai')) { size += localStorage[key].length; } } return { bytes: size, kb: (size / 1024).toFixed(2), mb: (size / (1024*1024)).toFixed(3) }; }
+      function formatSaveTime(date) { const h = String(date.getHours()).padStart(2, '0'); const m = String(date.getMinutes()).padStart(2, '0'); return `${h}:${m}`; }
+      function recordSaveHistory(type = 'manual') { const now = new Date(); const time = formatSaveTime(now); const usage = getStorageUsage(); saveHistory = (saveHistory || []).slice(-9).concat([{ time, type, size: usage.kb }]); saveLS(STORAGE.saveHistory, saveHistory); }
+      function updateSaveStatus() { const usage = getStorageUsage(); const lastTime = document.getElementById('lastSaveTime'); if (lastTime) { lastTime.textContent = loadLS(STORAGE.lastSave, 'N/A'); const kb = usage.kb; lastTime.title = `스토리지: ${kb} KB · 히스토리: ${saveHistory.length}회`; } }
+      function renderDNAList() { document.getElementById('dnaCountLabel').textContent = `DNA Library ${dnaLibrary.length}`; const box = document.getElementById('dnaListContainer'); box.innerHTML = dnaLibrary.map(item => `<div class="dna-list-item"><span>${item.name}</span><span style="font-size:10px;color:var(--dna)">${item.brand}</span></div>`).join(''); }
+      function renderDNAEditor() { const box = document.getElementById('dnaEditor'); box.innerHTML = dnaLibrary.map(item => `<div class="dna-card-display"><div style="font-family:'DM Mono',monospace;color:var(--dna);font-size:10px">${item.id}</div><div style="font-size:12px;font-weight:600;margin:6px 0 4px">${item.name}</div><div style="font-size:10px;color:var(--text3)">${item.brand} · ${item.sub} · ${item.category}</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">${item.tags.map(t => `<span class="file-tag">${t}</span>`).join('')}</div></div>`).join(''); }
+      function updateHistoryHint() { document.getElementById('historyHint').textContent = `history ${(agentHistories[currentAgent] || []).length}`; }
+      function getPlaceholder(id) { const map = { orchestrator: '디자인 목표, 브랜드, 디스플레이 방향을 입력하세요...', dna: 'DNA 재조합할 방향을 입력하세요...', metaphor: '메타포 3안을 요청해보세요...', material: '소재/원가/양산성 조건을 입력하세요...', form: '구조/실루엣/기구 방향을 입력하세요...' }; return map[id] || '메시지를 입력하세요...'; }
+      function addMessage(type, content, agent) { const area = document.getElementById('chatArea'); const welcome = document.getElementById('welcomeCard'); if (welcome) welcome.remove(); const wrap = document.createElement('div'); wrap.className = `msg ${type === 'user' ? 'user' : ''}`; const avatar = type === 'user' ? '👤' : agent?.icon || '🤖'; wrap.innerHTML = `<div class="msg-avatar">${avatar}</div><div class="msg-content">${type === 'agent' ? `<div class="msg-agent-label"><span>${agent?.name || 'Agent'}</span></div>` : ''}<div class="msg-bubble"></div></div>`; wrap.querySelector('.msg-bubble').textContent = content; area.appendChild(wrap); area.scrollTop = area.scrollHeight; }
+      function renderCurrentAgentHistory() { const area = document.getElementById('chatArea'); area.innerHTML = ''; const history = agentHistories[currentAgent] || []; if (!history.length) { area.innerHTML = `<div class="welcome-card" id="welcomeCard"><div class="welcome-title">${AGENTS[currentAgent].name}</div><div class="welcome-sub">이 에이전트와 대화를 시작하세요.</div></div>`; updateHistoryHint(); return; } history.forEach(msg => { if (msg.role === 'user') addMessage('user', msg.content, null); else addMessage('agent', msg.content, AGENTS[currentAgent]); }); updateHistoryHint(); }
+      function openKeyModal() { document.getElementById('apiKeyInput').value = apiKey; document.getElementById('modelSelect').value = selectedModel; document.getElementById('keyModal').classList.add('show'); }
+      function closeKeyModal() { document.getElementById('keyModal').classList.remove('show'); }
+      function saveKey() { const k = document.getElementById('apiKeyInput').value.trim(); const m = document.getElementById('modelSelect').value; if (!k || !k.startsWith('AIza')) { toast('Google AI Studio 키 형식이 아닙니다', 'error'); return; } apiKey = k; selectedModel = m; localStorage.setItem(STORAGE.key, JSON.stringify(k)); localStorage.setItem(STORAGE.model, JSON.stringify(m)); const btn = document.getElementById('apiKeyBtn'); btn.classList.add('has-key'); btn.textContent = '🔑 OK'; closeKeyModal(); toast('API 키 저장 완료', 'success'); }
+      function clearKey() { apiKey = ''; localStorage.removeItem(STORAGE.key); const btn = document.getElementById('apiKeyBtn'); btn.classList.remove('has-key'); btn.textContent = '🔑 KEY'; document.getElementById('apiKeyInput').value = ''; toast('API 키 삭제됨'); }
+      function saveAllLocal() { saveChatHistories(); saveBrief(); saveLS(STORAGE.dna, dnaLibrary); if (apiKey) localStorage.setItem(STORAGE.key, JSON.stringify(apiKey)); if (selectedModel) localStorage.setItem(STORAGE.model, JSON.stringify(selectedModel)); const now = new Date(); const time = formatSaveTime(now); localStorage.setItem(STORAGE.lastSave, time); recordSaveHistory('manual'); updateSaveStatus(); const usage = getStorageUsage(); toast(`✓ 저장 완료 ${time} (${usage.kb}KB)`, 'success'); }
+      function scheduleAutoSave() { clearTimeout(autoSaveTimer); autoSaveTimer = setTimeout(() => { const now = new Date(); const time = formatSaveTime(now); localStorage.setItem(STORAGE.lastSave, time); recordSaveHistory('auto'); updateSaveStatus(); }, 3000); }
+      function exportChat() { const payload = { exportedAt: new Date().toISOString(), currentAgent, selectedModel, brief: collectBriefData(), agentHistories, dnaLibrary }; const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `design-ai-chat-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url); toast('채팅 JSON을 다운로드했습니다', 'success'); }
+      function downloadCurrentHTML() { const blob = new Blob(['<!DOCTYPE html>\n' + document.documentElement.outerHTML], { type:'text/html;charset=utf-8' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'design-ai-agent-stable-final.html'; a.click(); URL.revokeObjectURL(url); toast('HTML 파일을 다운로드했습니다', 'success'); }
+      function selectAgent(id, btn) { currentAgent = id; document.querySelectorAll('.agent-btn').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active'); else document.querySelector(`.agent-btn[data-agent="${id}"]`)?.classList.add('active'); document.getElementById('activeAgentLabel').textContent = AGENTS[id].name.toUpperCase(); document.getElementById('msgInput').placeholder = getPlaceholder(id); renderCurrentAgentHistory(); }
+      function setMode(mode) { currentMode = mode; document.querySelectorAll('.mode-chip').forEach(c => c.classList.remove('active')); document.getElementById(`mode-${mode}`).classList.add('active'); }
+      function switchTab(tab) { document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active')); document.querySelector(`.panel-tab[data-tab="${tab}"]`)?.classList.add('active'); ['brief','pipeline','concepts','dna'].forEach(id => document.getElementById(`tab-${id}`).classList.add('hide')); document.getElementById(`tab-${tab}`).classList.remove('hide'); }
+      function clearCurrentHistory() { if (!confirm(`${AGENTS[currentAgent].name} 대화를 초기화할까요?`)) return; agentHistories[currentAgent] = []; scheduleAutoSave(); renderCurrentAgentHistory(); toast('대화 초기화됨', 'success'); }
+      function clearBrief() { ['fBrand','fSubBrand','fCategory','fChannel','fW','fH','fD','fQty','fDigital','fNotes'].forEach(id => document.getElementById(id).value = ''); updateGateStatus(); scheduleAutoSave(); toast('브리프 초기화됨'); }
+      function updateGateStatus() { const b = collectBriefData(); const states = [!!b.brand, !!(b.sub_brand && b.category), !!b.channel, !!(b.dimensions.W && b.dimensions.H), !!b.notes]; states.forEach((filled, i) => document.getElementById(`gate${i+1}item`).classList.toggle('filled', filled)); scheduleAutoSave(); }
+      function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+      function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+      function handleFileAttach(e) { const files = [...(e.target.files || [])]; files.forEach(file => { const reader = new FileReader(); reader.onload = () => { attachedFiles.push({ name:file.name, type:file.type, base64:String(reader.result).split(',')[1] || '' }); renderAttachedFiles(); }; reader.readAsDataURL(file); }); e.target.value = ''; }
+      function removeAttachedFile(idx) { attachedFiles.splice(idx, 1); renderAttachedFiles(); }
+      function renderAttachedFiles() { document.getElementById('attachedFiles').innerHTML = attachedFiles.map((f,i) => `<span class="file-tag">${f.name} <span style="cursor:pointer;color:var(--red)" onclick="removeAttachedFile(${i})">✕</span></span>`).join(''); }
+      function buildAgentReply(agentId, prompt) { const brief = collectBriefData(); const base = { orchestrator: `아트디렉터 관점 요약\n- 브랜드: ${brief.brand || '미입력'}\n- 카테고리: ${brief.category || '미입력'}\n- 제안: ${prompt} 기반으로 방향을 정리합니다.\n- 권장: 핵심 메시지 1개, SKU 가시성 강화, 채널 적합 구조 검토`, dna: `DNA Remix\n- 기존 DNA에서 재사용 가능한 요소를 추출합니다.\n- 입력 메시지: ${prompt}\n- 추천 DNA 포인트: 모듈성, 교체성, 반복 생산성`, metaphor: `Metaphor Maker\n- Safe: 정제된 브랜드 심볼형\n- Emotional: 라이프스타일 연상형\n- Bold: 제품을 오브제로 보는 조형형\n- 입력 메시지: ${prompt}`, material: `Material Hunter\n- 1차 추천: ABS + PETG + 자석 체결\n- 원가/양산성 우선 검토\n- 입력 메시지: ${prompt}`, form: `Form Explorer\n- 실루엣: 슬림 수직형\n- 메커니즘: 모듈 인서트\n- 조립 난이도: 2/5\n- 입력 메시지: ${prompt}` }; return base[agentId] || `입력: ${prompt}`; }
+      async function sendMessage() { if (isRunning) return; const input = document.getElementById('msgInput'); const text = input.value.trim(); if (!text && !attachedFiles.length) return; const userText = text || '🖼 이미지 첨부 메시지'; agentHistories[currentAgent].push({ role:'user', content:userText }); addMessage('user', userText, null); scheduleAutoSave(); input.value = ''; autoResize(input); const thinking = document.createElement('div'); thinking.className = 'thinking-bubble'; thinking.id = 'thinkingNow'; thinking.textContent = 'Thinking...'; document.getElementById('chatArea').appendChild(thinking); document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight; isRunning = true; try { let reply = ''; if (apiKey) { try { const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ contents:[{ role:'user', parts:[{ text:userText }] }] }) }); const data = await res.json(); reply = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('\n') || ''; } catch (e) { console.error(e); } } if (!reply) reply = buildAgentReply(currentAgent, userText); document.getElementById('thinkingNow')?.remove(); agentHistories[currentAgent].push({ role:'assistant', content:reply }); addMessage('agent', reply, AGENTS[currentAgent]); scheduleAutoSave(); attachedFiles = []; renderAttachedFiles(); } finally { isRunning = false; } }
+      async function runFullSwarm() { const brief = collectBriefData(); if (!brief.brand || !brief.category) { toast('브랜드와 카테고리를 먼저 입력하세요', 'error'); switchTab('brief'); return; } switchTab('pipeline'); const steps = ['Intake Protocol','DNA Remix','Metaphor Maker','Material Hunter','Form Explorer','Art Director Synthesis']; const box = document.getElementById('pipelineBox'); box.innerHTML = steps.map((s,i) => `<div class="pipe-step">${i+1}. ${s}</div>`).join(''); await new Promise(r => setTimeout(r, 300)); lastConcepts = [{ name:'A. Precision Frame', desc:'슬림 프레임 기반의 정제된 브랜드 디스플레이', cues:'minimal / led / modular' }, { name:'B. Ritual Stage', desc:'제품 체험 순간을 무대로 연출하는 구조', cues:'experience / warm / highlight' }, { name:'C. Smart Insert', desc:'교체형 인서트로 SKU 변화에 유연한 양산형 구조', cues:'mass / efficient / flexible' }]; document.getElementById('conceptCards').innerHTML = lastConcepts.map((c,i) => `<div class="concept-card ${i===0?'selected':''}"><div style="font-size:18px;font-weight:700;margin-bottom:6px">${c.name}</div><div style="font-size:12px;color:var(--text2);margin-bottom:6px">${c.desc}</div><div style="font-size:10px;color:var(--text3)">${c.cues}</div></div>`).join(''); switchTab('concepts'); toast('Swarm 실행 완료', 'success'); }
+      function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+      function togglePanel() { document.getElementById('rightPanel').classList.toggle('open'); }
+      function init() { try { apiKey = loadLS(STORAGE.key, '') || ''; selectedModel = loadLS(STORAGE.model, 'gemini-2.5-flash') || 'gemini-2.5-flash'; dnaLibrary = loadLS(STORAGE.dna, SEED_DNA) || SEED_DNA; saveHistory = loadLS(STORAGE.saveHistory, []) || []; loadBrief(); loadChatHistories(); if (apiKey) { const btn = document.getElementById('apiKeyBtn'); btn.classList.add('has-key'); btn.textContent = '🔑 OK'; } renderDNAList(); renderDNAEditor(); updateGateStatus(); updateSaveStatus(); switchTab('brief'); selectAgent('orchestrator', document.querySelector('.agent-btn[data-agent="orchestrator"]')); } catch (e) { console.error(e); toast('초기화 오류', 'error'); } }
+      init();
+    </script>
+  </body>
+</html>
